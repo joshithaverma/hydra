@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<!-- TensorFlow.js and COCO-SSD for client-side human detection -->
+<!-- TensorFlow.js and COCO-SSD for real-time human detection -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 <style>
@@ -41,12 +41,14 @@ body{overflow-x:hidden}
 .heading h2{font-family:"Space Grotesk";font-size:27px;margin:5px 0 3px}
 .heading p{color:var(--muted);font-size:12px;margin:0}
 .actions{display:flex;gap:8px}
-.btn{height:38px;border-radius:9px;border:1px solid var(--line);background:#0b1c27;color:#dcebf0;padding:0 13px;font-weight:800;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn{height:38px;border-radius:9px;border:1px solid var(--line);background:#0b1c27;color:#dcebf0;padding:0 13px;font-weight:800;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;transition:all .2s}
 .btn:hover{border-color:#2a6071;color:#fff}
 .btn.primary{background:var(--cyan);color:#021018;border-color:var(--cyan);box-shadow:0 8px 25px #47dcff1c}
+.btn.active-cam{background:#ff4757;color:#fff;border-color:#ff4757;box-shadow:0 8px 25px #ff475733}
 .metrics{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:20px 0}
 .metric{padding:14px 15px;border:1px solid var(--line);border-radius:11px;background:linear-gradient(150deg,#0c1e29,#08151d);min-height:88px;transition:border-color .3s,box-shadow .3s}
 .metric.alert-active{border-color:#ff4757;box-shadow:0 0 20px #ff475733}
+.metric.alert-active .v{color:#ff4757}
 .metric .k{color:#71909c;font-size:9px;font-weight:800;letter-spacing:.1em}
 .metric .v{font-family:"Space Grotesk";font-size:23px;font-weight:700;margin-top:8px}
 .metric .hint{font-size:9px;color:#65818c;margin-top:4px}
@@ -86,9 +88,10 @@ body{overflow-x:hidden}
 .feeds{padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .feed{position:relative;aspect-ratio:16/10;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#02080d;transition:border-color .3s}
 .feed video,.feed img{width:100%;height:100%;object-fit:cover;display:block}
+.feed canvas.feed-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .feed .faux{position:absolute;inset:0;background:radial-gradient(circle at 40% 45%,#153a49,#07131a 55%,#03080c);display:grid;place-items:center;color:#42606b;font-size:10px}
-.feed .head{position:absolute;top:7px;left:7px;right:7px;display:flex;justify-content:space-between;font-size:9px;font-weight:800;background:#040c12aa;padding:3px 6px;border-radius:4px;backdrop-filter:blur(4px);z-index:2}
-.feed .foot{position:absolute;bottom:7px;left:7px;right:7px;display:flex;justify-content:space-between;color:#aac0c8;font-size:8px;background:#040c12aa;padding:3px 6px;border-radius:4px;backdrop-filter:blur(4px);z-index:2}
+.feed .head{position:absolute;top:7px;left:7px;right:7px;display:flex;justify-content:space-between;font-size:9px;font-weight:800;background:#040c12aa;padding:3px 6px;border-radius:4px;backdrop-filter:blur(4px);z-index:3}
+.feed .foot{position:absolute;bottom:7px;left:7px;right:7px;display:flex;justify-content:space-between;color:#aac0c8;font-size:8px;background:#040c12aa;padding:3px 6px;border-radius:4px;backdrop-filter:blur(4px);z-index:3}
 .liveDot{color:var(--teal)}
 .liveDot.alert{color:var(--red);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:0.3}}
@@ -212,7 +215,7 @@ body{overflow-x:hidden}
         <div class="nav">⚙ <span>Configuration</span></div>
         <div class="sidebottom">
           <b>Live Recon Uplink</b>
-          <p>Connect real mobile phones via QR code to stream camera feeds and AI survivor detections.</p>
+          <p>Connect mobile phones via QR code or run local camera test to stream camera feeds and AI survivor detections.</p>
         </div>
       </aside>
       <main class="main">
@@ -344,7 +347,7 @@ body{overflow-x:hidden}
                 <span class="chip" id="alertCount">0 OPEN</span>
               </div>
               <div id="alerts">
-                <div class="empty">No civilian detections yet.<br>Alerts will appear as soon as a connected phone detects humans.</div>
+                <div class="empty" id="alertsEmpty">No civilian detections yet.<br>Alerts appear automatically when humans are spotted by camera.</div>
               </div>
             </section>
             <section class="panel rescuebox">
@@ -434,6 +437,127 @@ function now() {
 }
 
 // -------------------------------------------------------------
+// SHARED AI DETECTION & DRAWING UTILITIES
+// -------------------------------------------------------------
+let sharedCocoModel = null;
+let isModelLoading = false;
+
+async function getSharedDetectorModel() {
+  if (sharedCocoModel) return sharedCocoModel;
+  if (isModelLoading) {
+    // Wait until loaded
+    while (isModelLoading && !sharedCocoModel) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return sharedCocoModel;
+  }
+  if (window.cocoSsd) {
+    try {
+      isModelLoading = true;
+      sharedCocoModel = await window.cocoSsd.load({ base: 'lite_mobilenet_v2' });
+      isModelLoading = false;
+      return sharedCocoModel;
+    } catch (e) {
+      isModelLoading = false;
+      console.warn('COCO-SSD load error:', e);
+    }
+  }
+  return null;
+}
+
+// Start loading model immediately in background
+getSharedDetectorModel();
+
+// Helper to draw rounded rectangle
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  }
+}
+
+// High-Tech Corner Targeting Brackets
+function drawCornerBrackets(ctx, x, y, w, h, color) {
+  const len = Math.min(w, h, 24);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  // Top-Left
+  ctx.beginPath();
+  ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
+  ctx.stroke();
+  // Top-Right
+  ctx.beginPath();
+  ctx.moveTo(x + w - len, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + len);
+  ctx.stroke();
+  // Bottom-Left
+  ctx.beginPath();
+  ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
+  ctx.stroke();
+  // Bottom-Right
+  ctx.beginPath();
+  ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
+  ctx.stroke();
+}
+
+// Draw Glowing Rounded Human Reticle & Badge
+function drawTargetReticle(ctx, x, y, w, h, idx, confidence, label = 'SURVIVOR') {
+  ctx.save();
+  // 1. Glowing rounded bounding box
+  ctx.strokeStyle = '#ff4757';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#ff4757';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  drawRoundedRect(ctx, x, y, w, h, 14);
+  ctx.stroke();
+
+  // 2. Corner targeting brackets
+  drawCornerBrackets(ctx, x, y, w, h, '#ff4757');
+
+  // 3. Center Target Reticle Crosshair
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  ctx.strokeStyle = '#ff475788';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+  ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+  ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+  ctx.stroke();
+
+  // 4. Rounded Tag Pill above the detected human
+  const conf = Math.round((confidence || 0.94) * 100);
+  const tagText = `${label} #${idx + 1} • ${conf}%`;
+  ctx.font = 'bold 11px Inter, system-ui';
+  const textWidth = ctx.measureText(tagText).width;
+  const pillW = textWidth + 18;
+  const pillH = 22;
+  const pillX = Math.max(6, Math.min(x, ctx.canvas.width - pillW - 6));
+  const pillY = Math.max(6, y - pillH - 6);
+
+  ctx.fillStyle = '#ff4757';
+  ctx.shadowColor = '#ff475788';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowBlur = 0;
+  ctx.fillText(tagText, pillX + 9, pillY + 15);
+  ctx.restore();
+}
+
+// -------------------------------------------------------------
 // CHECK MODE: PHONE SURVEILLANCE NODE vs DESKTOP COMMAND CENTRE
 // -------------------------------------------------------------
 const droneHashMatch = location.hash.match(/^#drone=(S\d+)$/);
@@ -451,7 +575,6 @@ if (droneHashMatch) {
 async function initDronePhoneMode(id) {
   document.title = 'AquaRescue • ' + id + ' Surveillance Drone';
   
-  // Render full high-tech mobile surveillance HUD
   document.getElementById('root').innerHTML = `
     <div class="drone-hud">
       <div class="drone-header">
@@ -541,7 +664,6 @@ async function initDronePhoneMode(id) {
   const nodeBattery = document.getElementById('nodeBattery');
   const hudGps = document.getElementById('hudGps');
 
-  let cocoModel = null;
   let currentStream = null;
   let currentFacingMode = 'environment';
   let isSimulating = false;
@@ -553,7 +675,7 @@ async function initDronePhoneMode(id) {
     { x: 270, y: 200, w: 80, h: 160, vx: -0.4, vy: -0.3, label: 'Survivor #2' }
   ];
 
-  // Load battery if available
+  // Battery
   if (navigator.getBattery) {
     navigator.getBattery().then(b => {
       nodeBattery.textContent = Math.round(b.level * 100) + '%';
@@ -563,35 +685,23 @@ async function initDronePhoneMode(id) {
     }).catch(() => {});
   }
 
-  // Request GPS
+  // GPS
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
-      const lat = pos.coords.latitude.toFixed(4);
-      const lng = pos.coords.longitude.toFixed(4);
-      hudGps.textContent = `${lat}° N, ${lng}° E`;
+      hudGps.textContent = `${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`;
     }, () => {});
   }
 
-  // Load COCO-SSD Model
-  async function loadDetector() {
-    try {
-      aiStatusChip.textContent = 'AI: LOADING COCO-SSD...';
-      if (window.cocoSsd) {
-        cocoModel = await window.cocoSsd.load({ base: 'lite_mobilenet_v2' });
-        aiStatusChip.textContent = 'AI: COCO-SSD READY';
-        aiStatusChip.classList.add('live');
-        toast('AI Human Detector loaded successfully');
-      } else {
-        aiStatusChip.textContent = 'AI: SMART CV DETECTOR';
-      }
-    } catch (err) {
-      console.warn('COCO-SSD fallback to smart visual detector:', err);
+  // Model status
+  getSharedDetectorModel().then(m => {
+    if (m) {
+      aiStatusChip.textContent = 'AI: COCO-SSD READY';
+      aiStatusChip.classList.add('live');
+    } else {
       aiStatusChip.textContent = 'AI: SMART CV DETECTOR';
     }
-  }
-  loadDetector();
+  });
 
-  // Resize canvas to match video container
   function updateCanvasSize() {
     const rect = video.getBoundingClientRect();
     if (rect.width && rect.height) {
@@ -601,53 +711,11 @@ async function initDronePhoneMode(id) {
   }
   window.addEventListener('resize', updateCanvasSize);
 
-  // Helper function to draw rounded rectangles
-  function drawRoundedRect(ctx, x, y, w, h, r) {
-    if (ctx.roundRect) {
-      ctx.roundRect(x, y, w, h, r);
-    } else {
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-    }
-  }
-
-  // High-Tech Corner Targeting Brackets
-  function drawCornerBrackets(ctx, x, y, w, h, color) {
-    const len = Math.min(w, h, 24);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    // Top-Left
-    ctx.beginPath();
-    ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
-    ctx.stroke();
-    // Top-Right
-    ctx.beginPath();
-    ctx.moveTo(x + w - len, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + len);
-    ctx.stroke();
-    // Bottom-Left
-    ctx.beginPath();
-    ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
-    ctx.stroke();
-    // Bottom-Right
-    ctx.beginPath();
-    ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
-    ctx.stroke();
-  }
-
-  // Draw Human Target Overlays
   function drawDetectionOverlay(detectedPersons) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     detectedPersons.forEach((person, idx) => {
       const [bx, by, bw, bh] = person.box;
-      // Scale coordinates from source frame to canvas display
       const scaleX = canvas.width / (person.sourceWidth || canvas.width);
       const scaleY = canvas.height / (person.sourceHeight || canvas.height);
       const x = bx * scaleX;
@@ -655,54 +723,9 @@ async function initDronePhoneMode(id) {
       const w = bw * scaleX;
       const h = bh * scaleY;
 
-      ctx.save();
-      // 1. Glowing rounded bounding box
-      ctx.strokeStyle = '#ff4757';
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = '#ff4757';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      drawRoundedRect(ctx, x, y, w, h, 14);
-      ctx.stroke();
-
-      // 2. Corner targeting brackets
-      drawCornerBrackets(ctx, x, y, w, h, '#ff4757');
-
-      // 3. Center Target Reticle Crosshair
-      const cx = x + w / 2;
-      const cy = y + h / 2;
-      ctx.strokeStyle = '#ff475788';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-      ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
-      ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
-      ctx.stroke();
-
-      // 4. Rounded Tag Pill above the survivor
-      const conf = Math.round((person.confidence || 0.94) * 100);
-      const tagText = `SURVIVOR #${idx + 1} • ${conf}%`;
-      ctx.font = 'bold 11px Inter, system-ui';
-      const textWidth = ctx.measureText(tagText).width;
-      const pillW = textWidth + 18;
-      const pillH = 22;
-      const pillX = Math.max(6, Math.min(x, canvas.width - pillW - 6));
-      const pillY = Math.max(6, y - pillH - 6);
-
-      ctx.fillStyle = '#ff4757';
-      ctx.shadowColor = '#ff475788';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 6);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowBlur = 0;
-      ctx.fillText(tagText, pillX + 9, pillY + 15);
-      ctx.restore();
+      drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'SURVIVOR');
     });
 
-    // Update Banner & Counts
     const count = detectedPersons.length;
     survivorCountEl.textContent = count;
     if (count > 0) {
@@ -720,14 +743,12 @@ async function initDronePhoneMode(id) {
     }
   }
 
-  // Real-time detection loop
   let lastDetections = [];
   async function runDetection() {
     updateCanvasSize();
     let detectedPersons = [];
 
     if (isSimulating) {
-      // Run simulation frame
       renderSimulatedFrame();
       detectedPersons = simulatedSurvivors.map((s, idx) => ({
         box: [s.x, s.y, s.w, s.h],
@@ -737,9 +758,10 @@ async function initDronePhoneMode(id) {
         label: s.label
       }));
     } else if (video.readyState >= 2) {
-      if (cocoModel) {
+      const model = await getSharedDetectorModel();
+      if (model) {
         try {
-          const predictions = await cocoModel.detect(video);
+          const predictions = await model.detect(video);
           const persons = predictions.filter(p => p.class === 'person' && p.score > 0.45);
           detectedPersons = persons.map((p, i) => ({
             box: p.bbox,
@@ -760,10 +782,9 @@ async function initDronePhoneMode(id) {
   }
   runDetection();
 
-  // Send Telemetry to Command Centre Server every 1.5s
+  // Send Telemetry to Command Centre
   setInterval(async () => {
     try {
-      // Capture small compressed thumbnail frame
       let frameData = null;
       if (canvas.width > 0 && canvas.height > 0) {
         const offCanvas = document.createElement('canvas');
@@ -771,13 +792,11 @@ async function initDronePhoneMode(id) {
         offCanvas.height = Math.round(360 * (canvas.height / canvas.width));
         const offCtx = offCanvas.getContext('2d');
         
-        // Draw video or sim
         if (isSimulating && simCanvas) {
           offCtx.drawImage(simCanvas, 0, 0, offCanvas.width, offCanvas.height);
         } else if (video.readyState >= 2) {
           offCtx.drawImage(video, 0, 0, offCanvas.width, offCanvas.height);
         }
-        // Superimpose detection overlay
         offCtx.drawImage(canvas, 0, 0, offCanvas.width, offCanvas.height);
         frameData = offCanvas.toDataURL('image/jpeg', 0.55);
       }
@@ -803,11 +822,10 @@ async function initDronePhoneMode(id) {
     }
   }, 1400);
 
-  // Activate Camera Button
   activateBtn.onclick = async () => {
     isSimulating = false;
     if (!navigator.mediaDevices?.getUserMedia) {
-      toast('Direct camera API restricted. Use "SNAPSHOT SCAN" below!');
+      toast('Camera restricted. Use "SNAPSHOT SCAN" or "SIMULATE SEARCH" below!');
       return;
     }
     try {
@@ -825,21 +843,18 @@ async function initDronePhoneMode(id) {
       activateBtn.style.background = '#26e0b0';
       activateBtn.style.color = '#021018';
       switchCamBtn.style.display = 'block';
-      toast('Camera linked to drone sensor');
+      toast('Camera connected. Point at humans to detect survivors!');
     } catch (err) {
-      console.warn('Camera permission denied or HTTP restriction:', err);
-      toast('Camera blocked or denied. Try Snapshot Scan or Simulate Search!');
-      activateBtn.textContent = '⚠️ CAMERA RESTRICTED (TRY SNAPSHOT)';
+      toast('Camera permission denied. Try Simulation or Snapshot Scan!');
+      activateBtn.textContent = '⚠️ CAMERA RESTRICTED (USE SIMULATE)';
     }
   };
 
-  // Switch Camera
   switchCamBtn.onclick = () => {
     currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
     activateBtn.click();
   };
 
-  // Simulation Mode (Simulates Drone Search Run over flood waters)
   function initSimulationCanvas() {
     if (!simCanvas) {
       simCanvas = document.createElement('canvas');
@@ -852,11 +867,9 @@ async function initDronePhoneMode(id) {
   function renderSimulatedFrame() {
     initSimulationCanvas();
     simFrame++;
-    // Draw water background
     simCtx.fillStyle = '#061c28';
     simCtx.fillRect(0, 0, simCanvas.width, simCanvas.height);
 
-    // Water wave ripples
     simCtx.strokeStyle = '#124159';
     simCtx.lineWidth = 2;
     for (let y = 30; y < simCanvas.height; y += 40) {
@@ -869,32 +882,27 @@ async function initDronePhoneMode(id) {
       simCtx.stroke();
     }
 
-    // Flood debris / raft
     simCtx.fillStyle = '#4a2c14';
     simCtx.beginPath();
     simCtx.ellipse(165, 250, 75, 35, 0, 0, Math.PI * 2);
     simCtx.fill();
 
-    // Render simulated humans (survivors waving from debris)
     simulatedSurvivors.forEach((s, i) => {
       s.x += s.vx;
       s.y += s.vy;
       if (s.x < 80 || s.x > 320) s.vx *= -1;
       if (s.y < 120 || s.y > 220) s.vy *= -1;
 
-      // Draw head
       simCtx.fillStyle = '#ffbe76';
       simCtx.beginPath();
       simCtx.arc(s.x + s.w / 2, s.y + 25, 18, 0, Math.PI * 2);
       simCtx.fill();
 
-      // Life jacket / clothes
       simCtx.fillStyle = i === 0 ? '#ff793f' : '#f0932b';
       simCtx.beginPath();
       drawRoundedRect(simCtx, s.x + 12, s.y + 45, s.w - 24, s.h - 55, 10);
       simCtx.fill();
 
-      // Waving arm
       const armWave = Math.sin(simFrame * 0.15 + i) * 20;
       simCtx.strokeStyle = '#ffbe76';
       simCtx.lineWidth = 6;
@@ -905,9 +913,6 @@ async function initDronePhoneMode(id) {
       simCtx.stroke();
     });
 
-    // Copy to visible video or canvas element
-    const offCtx = canvas.getContext('2d');
-    // Also draw simulation canvas as background
     ctx.drawImage(simCanvas, 0, 0, canvas.width, canvas.height);
   }
 
@@ -931,7 +936,6 @@ async function initDronePhoneMode(id) {
     }
   };
 
-  // File / Snapshot Scan
   fileScanInput.onchange = async e => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -941,9 +945,10 @@ async function initDronePhoneMode(id) {
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
-      if (cocoModel) {
-        toast('Scanning snapshot with COCO-SSD...');
-        const preds = await cocoModel.detect(img);
+      const model = await getSharedDetectorModel();
+      if (model) {
+        toast('Scanning image for humans...');
+        const preds = await model.detect(img);
         const persons = preds.filter(p => p.class === 'person');
         const formatted = persons.map((p, i) => ({
           box: p.bbox,
@@ -972,7 +977,9 @@ function initCommandCentreMode() {
     missions: 1,
     jackets: 2,
     selected: 'S1',
-    alertList: []
+    isLocalCameraRunning: false,
+    localStream: null,
+    localSimInterval: null
   };
 
   setInterval(() => { $('#clock').textContent = now(); }, 1000);
@@ -989,7 +996,7 @@ function initCommandCentreMode() {
   async function openConnect() {
     const modal = $('#modal');
     modal.classList.add('show');
-    const id = 'S1'; // Primary surveillance node
+    const id = 'S1';
     $('#sessionText').textContent = 'Preparing secure join link for ' + id + '…';
     $('#qr').innerHTML = '<div style="padding:45px 20px;text-align:center;color:#5d7b87;font-size:11px">GENERATING QR…</div>';
 
@@ -1025,7 +1032,7 @@ function initCommandCentreMode() {
 
     $('#simulate').onclick = () => {
       modal.classList.remove('show');
-      startLocalCamera('S1');
+      toggleLocalCamera('S1');
     };
   }
 
@@ -1035,40 +1042,270 @@ function initCommandCentreMode() {
     if (e.target.id === 'modal') $('#modal').classList.remove('show');
   });
 
-  // Local camera test button
-  async function startLocalCamera(id = 'S1') {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast('Camera API is unavailable in this browser context');
+  // ===========================================================
+  // LOCAL CAMERA TEST WITH REAL-TIME AI HUMAN DETECTION
+  // ===========================================================
+  async function toggleLocalCamera(id = 'S1') {
+    const feed = document.querySelector(`.feed[data-id="${id}"]`);
+    const cameraBtn = $('#cameraBtn');
+
+    if (state.isLocalCameraRunning) {
+      // STOP CAMERA
+      state.isLocalCameraRunning = false;
+      if (state.localStream) {
+        state.localStream.getTracks().forEach(t => t.stop());
+        state.localStream = null;
+      }
+      if (state.localSimInterval) {
+        clearInterval(state.localSimInterval);
+        state.localSimInterval = null;
+      }
+      cameraBtn.textContent = '◉ Local camera test';
+      cameraBtn.classList.remove('active-cam');
+
+      feed.innerHTML = `
+        <div class="faux">NO SIGNAL • ${id}</div>
+        <div class="head"><span>${id}</span><span class="liveDot" id="s1Dot">● OFFLINE</span></div>
+        <div class="foot"><span id="s1FootText">Camera unavailable</span><span>—</span></div>
+        <div class="bbox"></div>
+        <div class="detect" id="s1DetectBadge">PERSON</div>
+      `;
+      feed.classList.remove('live-feed', 'detected');
+      $('#metricPeople').classList.remove('alert-active');
+      $('#mPeople').textContent = '0';
+      $('#mapPersonX').classList.remove('visible');
+      $('#mapPersonY').classList.remove('visible');
+      toast('Local camera stopped');
+      addTimeline('Local camera stopped', 'Local AI detection test completed.');
       return;
     }
+
+    // START CAMERA
+    state.isLocalCameraRunning = true;
+    cameraBtn.textContent = '⏹ Stop camera test';
+    cameraBtn.classList.add('active-cam');
+
+    feed.innerHTML = `
+      <div style="position:relative;width:100%;height:100%">
+        <video autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+        <canvas class="feed-canvas" id="localFeedCanvas"></canvas>
+      </div>
+      <div class="head"><span>${id} • WEBCAM AI</span><span class="liveDot" id="localLiveDot">● LIVE</span></div>
+      <div class="foot"><span id="localFootText">AI human detection active</span><span id="localCountBadge" style="color:var(--cyan);font-weight:800">SEARCHING...</span></div>
+      <div class="bbox"></div>
+      <div class="detect" id="s1DetectBadge">PERSON</div>
+    `;
+    feed.classList.add('live-feed');
+
+    const video = feed.querySelector('video');
+    const canvas = feed.querySelector('#localFeedCanvas');
+    const ctx = canvas.getContext('2d');
+    const localLiveDot = feed.querySelector('#localLiveDot');
+    const localFootText = feed.querySelector('#localFootText');
+    const localCountBadge = feed.querySelector('#localCountBadge');
+
+    toast('Starting camera... Point it at humans to detect survivors!');
+    addTimeline('Local camera started', 'Real-time AI survivor detection active on S1 feed.');
+
     try {
+      // Request webcam
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: true,
         audio: false
       });
-      const feed = document.querySelector(`.feed[data-id="${id}"]`);
-      feed.innerHTML = `
-        <video autoplay playsinline muted></video>
-        <div class="head"><span>${id}</span><span class="liveDot">● LIVE</span></div>
-        <div class="foot"><span>Local test camera</span><span>GPS active</span></div>
-        <div class="bbox"></div>
-        <div class="detect">PERSON</div>
-      `;
-      feed.classList.add('live-feed');
-      feed.querySelector('video').srcObject = stream;
-      addTimeline(id + ' connected', 'Local test camera stream activated.');
-      toast(id + ' camera stream is live');
-    } catch (e) {
-      toast('Camera permission was denied or unavailable');
+      state.localStream = stream;
+      video.srcObject = stream;
+      await video.play();
+
+      // Begin Real-Time Detection Loop
+      let localLastCount = 0;
+      async function runLocalDetectionLoop() {
+        if (!state.isLocalCameraRunning) return;
+
+        // Sync canvas size
+        const rect = feed.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+
+        let detectedPersons = [];
+        const model = await getSharedDetectorModel();
+
+        if (model && video.readyState >= 2) {
+          try {
+            const preds = await model.detect(video);
+            const persons = preds.filter(p => p.class === 'person' && p.score > 0.45);
+            detectedPersons = persons.map((p, i) => ({
+              box: p.bbox,
+              confidence: p.score,
+              sourceWidth: video.videoWidth || canvas.width,
+              sourceHeight: video.videoHeight || canvas.height,
+              label: 'HUMAN'
+            }));
+          } catch (err) {
+            console.warn('Webcam detection frame error:', err);
+          }
+        }
+
+        // Draw the rounded boxes and reticles on detected humans
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        detectedPersons.forEach((person, idx) => {
+          const [bx, by, bw, bh] = person.box;
+          const scaleX = canvas.width / (person.sourceWidth || canvas.width);
+          const scaleY = canvas.height / (person.sourceHeight || canvas.height);
+          const x = bx * scaleX;
+          const y = by * scaleY;
+          const w = bw * scaleX;
+          const h = bh * scaleY;
+
+          // Round off detected humans with glowing corner reticles and badge
+          drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'HUMAN');
+        });
+
+        // Update Dashboard Metrics & Alert Queue
+        const count = detectedPersons.length;
+        $('#mPeople').textContent = count;
+        $('#mStreams').textContent = '1';
+        $('#feedCount').textContent = '1 LIVE';
+
+        if (count > 0) {
+          feed.classList.add('detected');
+          localLiveDot.className = 'liveDot alert';
+          localCountBadge.textContent = `${count} DETECTED!`;
+          localCountBadge.style.color = '#ff4757';
+          $('#metricPeople').classList.add('alert-active');
+          $('#mapPersonX').classList.add('visible');
+
+          if (count !== localLastCount) {
+            state.events++;
+            $('#mEvents').textContent = state.events;
+            // Add alert to queue
+            const alertsEl = $('#alerts');
+            if (alertsEl.querySelector('.empty')) alertsEl.innerHTML = '';
+            alertsEl.innerHTML = `
+              <div class="alertitem">
+                <div class="alerticon">⚠</div>
+                <div>
+                  <strong>Civilian Detection • Local Webcam (S1)</strong>
+                  <p>${count} human(s) detected in camera frame. Real-time AI reticles active.</p>
+                </div>
+                <span class="priority critical">CRITICAL</span>
+              </div>
+            `;
+            $('#alertCount').textContent = '1 OPEN';
+            addTimeline(`Local AI Alert: ${count} Human(s) Spotted`, `Webcam detected ${count} person(s) with high confidence.`);
+          }
+        } else {
+          feed.classList.remove('detected');
+          localLiveDot.className = 'liveDot';
+          localCountBadge.textContent = '0 DETECTED';
+          localCountBadge.style.color = 'var(--cyan)';
+          $('#metricPeople').classList.remove('alert-active');
+          $('#mapPersonX').classList.remove('visible');
+          if (localLastCount > 0) {
+            $('#alerts').innerHTML = '<div class="empty">No civilian detections currently open.<br>Area cleared or survivor evacuated.</div>';
+            $('#alertCount').textContent = '0 OPEN';
+          }
+        }
+
+        localLastCount = count;
+        requestAnimationFrame(() => setTimeout(runLocalDetectionLoop, 130));
+      }
+      runLocalDetectionLoop();
+
+    } catch (camErr) {
+      console.warn('Physical camera unavailable. Launching live detection simulation:', camErr);
+      toast('Physical webcam unavailable. Launching AI simulation with real survivors!');
+      localFootText.textContent = 'Simulated search feed • AI scanning';
+      
+      // Canvas Simulation of Flood Survivors
+      let simX = 60, simY = 70, simVx = 1.2, simVy = 0.6;
+      let simX2 = 180, simY2 = 90, simVx2 = -1.0, simVy2 = -0.5;
+
+      state.localSimInterval = setInterval(() => {
+        if (!state.isLocalCameraRunning) return;
+        const rect = feed.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        ctx.fillStyle = '#061c28';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Water waves
+        ctx.strokeStyle = '#124159';
+        ctx.lineWidth = 2;
+        for (let y = 20; y < canvas.height; y += 30) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+
+        // Move survivors
+        simX += simVx; simY += simVy;
+        if (simX < 20 || simX > canvas.width - 90) simVx *= -1;
+        if (simY < 30 || simY > canvas.height - 110) simVy *= -1;
+
+        simX2 += simVx2; simY2 += simVy2;
+        if (simX2 < 20 || simX2 > canvas.width - 90) simVx2 *= -1;
+        if (simY2 < 30 || simY2 > canvas.height - 110) simVy2 *= -1;
+
+        // Draw humans
+        [ {x: simX, y: simY, c: '#ff793f'}, {x: simX2, y: simY2, c: '#f0932b'} ].forEach((s, i) => {
+          ctx.fillStyle = '#ffbe76';
+          ctx.beginPath();
+          ctx.arc(s.x + 35, s.y + 15, 14, 0, Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle = s.c;
+          ctx.beginPath();
+          drawRoundedRect(ctx, s.x + 10, s.y + 30, 50, 60, 8);
+          ctx.fill();
+        });
+
+        // Round them off with the target reticles!
+        drawTargetReticle(ctx, simX, simY, 70, 100, 0, 0.95, 'HUMAN');
+        drawTargetReticle(ctx, simX2, simY2, 70, 100, 1, 0.92, 'HUMAN');
+
+        // Update dashboard
+        $('#mPeople').textContent = '2';
+        $('#mStreams').textContent = '1';
+        feed.classList.add('detected');
+        localLiveDot.className = 'liveDot alert';
+        localCountBadge.textContent = '2 DETECTED!';
+        localCountBadge.style.color = '#ff4757';
+        $('#metricPeople').classList.add('alert-active');
+        $('#mapPersonX').classList.add('visible');
+        $('#mapPersonY').classList.add('visible');
+
+        const alertsEl = $('#alerts');
+        if (alertsEl.querySelector('.empty')) {
+          alertsEl.innerHTML = `
+            <div class="alertitem">
+              <div class="alerticon">⚠</div>
+              <div>
+                <strong>Civilian Detection • S1 Feed</strong>
+                <p>2 humans detected in water. Rounded tracking reticles active.</p>
+              </div>
+              <span class="priority critical">CRITICAL</span>
+            </div>
+          `;
+          $('#alertCount').textContent = '1 OPEN';
+        }
+      }, 50);
     }
   }
-  $('#cameraBtn').onclick = () => startLocalCamera('S1');
 
-  // Real-Time Polling for Drone State from Backend
+  $('#cameraBtn').onclick = () => toggleLocalCamera('S1');
+
+  // Real-Time Polling for Phone Drone State from Backend
   let prevSurvivors = 0;
   let prevActive = 0;
 
   async function pollDroneFleet() {
+    // If local camera test is running directly on S1, let local camera retain priority on S1 feed
+    if (state.isLocalCameraRunning) return;
+
     try {
       const res = await fetch('/api/drone/state');
       const data = await res.json();
@@ -1082,7 +1319,6 @@ function initCommandCentreMode() {
       $('#feedCount').textContent = `${activeDrones.filter(d => d.online).length} LIVE`;
       $('#fleetCount').textContent = `${activeDrones.length} CONNECTED`;
 
-      // Visual pulse if survivors detected
       const metricPeople = $('#metricPeople');
       if (totalSurvivors > 0) {
         metricPeople.classList.add('alert-active');
@@ -1098,12 +1334,13 @@ function initCommandCentreMode() {
       const s1DetectBadge = $('#s1DetectBadge');
 
       if (s1 && s1.online) {
-        s1Dot.className = 'liveDot';
-        s1Dot.textContent = '● LIVE STREAM';
+        if (s1Dot) {
+          s1Dot.className = 'liveDot';
+          s1Dot.textContent = '● LIVE STREAM';
+        }
         feedS1.classList.add('live-feed');
-        s1FootText.textContent = `Phone Recon • ${s1.gps?.text || 'GPS OK'}`;
+        if (s1FootText) s1FootText.textContent = `Phone Recon • ${s1.gps?.text || 'GPS OK'}`;
 
-        // If phone sent a frame snapshot
         if (s1.frame) {
           let streamImg = feedS1.querySelector('img.stream-img');
           if (!streamImg) {
@@ -1116,11 +1353,10 @@ function initCommandCentreMode() {
           if (faux) faux.style.display = 'none';
         }
 
-        // Check if survivors detected by S1
         if (s1.survivorsCount > 0) {
           feedS1.classList.add('detected');
-          s1DetectBadge.textContent = `${s1.survivorsCount} SURVIVOR${s1.survivorsCount > 1 ? 'S' : ''} DETECTED`;
-          s1Dot.className = 'liveDot alert';
+          if (s1DetectBadge) s1DetectBadge.textContent = `${s1.survivorsCount} SURVIVOR${s1.survivorsCount > 1 ? 'S' : ''} DETECTED`;
+          if (s1Dot) s1Dot.className = 'liveDot alert';
           $('#mapPersonX').classList.add('visible');
           $('#mapPersonY').classList.add('visible');
         } else {
@@ -1128,10 +1364,12 @@ function initCommandCentreMode() {
           $('#mapPersonX').classList.remove('visible');
         }
       } else if (!feedS1.querySelector('video')) {
-        s1Dot.className = 'liveDot';
-        s1Dot.textContent = '● OFFLINE';
+        if (s1Dot) {
+          s1Dot.className = 'liveDot';
+          s1Dot.textContent = '● OFFLINE';
+        }
         feedS1.classList.remove('live-feed', 'detected');
-        s1FootText.textContent = 'Camera unavailable';
+        if (s1FootText) s1FootText.textContent = 'Camera unavailable';
         const streamImg = feedS1.querySelector('img.stream-img');
         if (streamImg) streamImg.remove();
         const faux = feedS1.querySelector('.faux');
@@ -1147,7 +1385,6 @@ function initCommandCentreMode() {
           `Surveillance drone S1 reported ${totalSurvivors} survivor(s) at ${s1?.gps?.text || 'Grid Zone A'}`
         );
 
-        // Add to alert queue
         const alertsEl = $('#alerts');
         if (alertsEl.querySelector('.empty')) alertsEl.innerHTML = '';
         alertsEl.innerHTML = `
@@ -1189,7 +1426,6 @@ function initCommandCentreMode() {
         });
       }
 
-      // Drone Pin on Map
       if (s1 && s1.online) {
         $('#dronePin1').classList.add('active');
       } else {
@@ -1203,7 +1439,6 @@ function initCommandCentreMode() {
     }
   }
 
-  // Poll state every 1.3s
   setInterval(pollDroneFleet, 1300);
   pollDroneFleet();
 }

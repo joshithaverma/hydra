@@ -7,8 +7,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
-// In-memory registry for connected surveillance drones
-const droneRegistry = new Map();
+// In-memory registry for connected civilian streams & phone nodes
+const civilianRegistry = new Map();
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'AquaRescue' }));
 
@@ -17,17 +17,15 @@ app.get('/api/network', (_req, res) => {
   res.json({ ip, port: PORT, base: `http://${ip}:${PORT}` });
 });
 
-// Receive telemetry, survivor counts, and camera frames from phones/drones
-app.post('/api/drone/telemetry', (req, res) => {
+// Receive telemetry, survivor/civilian counts, and camera frames from civilian phones
+function handleCivilianTelemetry(req, res) {
   const { id, battery, gps, survivorsCount, detections, frame, status } = req.body || {};
-  if (!id) {
-    return res.status(400).json({ error: 'Missing drone ID' });
-  }
+  const nodeId = id || 'C1';
 
-  const existing = droneRegistry.get(id) || {};
-  droneRegistry.set(id, {
-    id,
-    battery: battery !== undefined ? battery : existing.battery ?? 88,
+  const existing = civilianRegistry.get(nodeId) || {};
+  civilianRegistry.set(nodeId, {
+    id: nodeId,
+    battery: battery !== undefined ? battery : existing.battery ?? 90,
     gps: gps || existing.gps || { text: '12.9716° N, 77.5946° E' },
     survivorsCount: typeof survivorsCount === 'number' ? survivorsCount : (existing.survivorsCount || 0),
     detections: Array.isArray(detections) ? detections : (existing.detections || []),
@@ -37,43 +35,53 @@ app.post('/api/drone/telemetry', (req, res) => {
     connectedAt: existing.connectedAt || Date.now()
   });
 
-  res.json({ ok: true, droneId: id, registeredAt: Date.now() });
-});
+  res.json({ ok: true, civilianId: nodeId, registeredAt: Date.now() });
+}
 
-// Get current fleet state and detections for Command Centre
-app.get('/api/drone/state', (_req, res) => {
+app.post('/api/civilian/telemetry', handleCivilianTelemetry);
+app.post('/api/drone/telemetry', handleCivilianTelemetry);
+
+// Get current civilian stream state and detections for Command Centre
+function handleCivilianState(_req, res) {
   const now = Date.now();
-  const activeDrones = [];
+  const activeCivilians = [];
   let totalSurvivors = 0;
 
-  for (const [id, drone] of droneRegistry.entries()) {
-    const isOnline = (now - drone.lastSeen) < 25000;
+  for (const [id, node] of civilianRegistry.entries()) {
+    const isOnline = (now - node.lastSeen) < 25000;
     if (isOnline) {
-      activeDrones.push({ ...drone, online: true });
-      totalSurvivors += (drone.survivorsCount || 0);
-    } else if (now - drone.lastSeen > 60000) {
-      droneRegistry.delete(id);
+      activeCivilians.push({ ...node, online: true });
+      totalSurvivors += (node.survivorsCount || 0);
+    } else if (now - node.lastSeen > 60000) {
+      civilianRegistry.delete(id);
     } else {
-      activeDrones.push({ ...drone, online: false });
+      activeCivilians.push({ ...node, online: false });
     }
   }
 
   res.json({
-    activeDrones,
+    activeCivilians,
+    activeDrones: activeCivilians, // alias for frontend backward compatibility
     totalSurvivors,
-    activeCount: activeDrones.filter(d => d.online).length,
+    activeCount: activeCivilians.filter(c => c.online).length,
     serverTime: now
   });
-});
+}
+
+app.get('/api/civilian/state', handleCivilianState);
+app.get('/api/drone/state', handleCivilianState);
 
 // Explicit node disconnection
-app.post('/api/drone/disconnect', (req, res) => {
+function handleDisconnect(req, res) {
   const { id } = req.body || {};
-  if (id && droneRegistry.has(id)) {
-    droneRegistry.delete(id);
+  if (id && civilianRegistry.has(id)) {
+    civilianRegistry.delete(id);
   }
   res.json({ ok: true });
-});
+}
+
+app.post('/api/civilian/disconnect', handleDisconnect);
+app.post('/api/drone/disconnect', handleDisconnect);
 
 function lanIPs() {
   const out = [];
@@ -86,9 +94,10 @@ function lanIPs() {
 }
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('\nAquaRescue Command Centre is running.');
+  console.log('\nAquaRescue Civilian Telecast & Command Centre is running.');
   console.log(`PC:   http://localhost:${PORT}`);
-  for (const ip of lanIPs()) console.log(`PHONE: http://${ip}:${PORT}`);
-  console.log('\nUse the PHONE address for the QR code when testing on a phone.\n');
+  for (const ip of lanIPs()) console.log(`CIVILIAN LINK: http://${ip}:${PORT}`);
+  console.log('\nUse the CIVILIAN LINK address for the QR code when testing on mobile devices.\n');
 });
+
 

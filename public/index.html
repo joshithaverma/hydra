@@ -192,7 +192,7 @@ body{overflow-x:hidden}
         <div class="mark">🌊</div>
         <div>
           <h1>AQUARESCUE</h1>
-          <small>FLOOD RESPONSE COMMAND CENTRE</small>
+          <small>CIVILIAN SOS & FLOOD RESPONSE COMMAND CENTRE</small>
         </div>
       </div>
       <div class="topright">
@@ -204,37 +204,37 @@ body{overflow-x:hidden}
       <aside class="sidebar">
         <div class="section-label">OPERATIONS</div>
         <div class="nav active">⌂ <span>Command Dashboard</span></div>
-        <div class="nav">◉ <span>Live Operations</span></div>
+        <div class="nav">📱 <span>Civilian SOS Streams</span></div>
         <div class="nav">⌖ <span>Coverage Map</span></div>
-        <div class="nav">▣ <span>Surveillance Fleet</span></div>
-        <div class="nav">⚠ <span>Detection Alerts</span></div>
-        <div class="nav">♢ <span>Rescue Drones</span></div>
+        <div class="nav">▣ <span>Civilian Network</span></div>
+        <div class="nav">⚠ <span>Civilian Alerts</span></div>
+        <div class="nav">♢ <span>Rescue Dispatch</span></div>
         <div class="nav">▤ <span>Mission History</span></div>
         <div class="section-label" style="margin-top:20px">SYSTEM</div>
         <div class="nav">◌ <span>Network Health</span></div>
         <div class="nav">⚙ <span>Configuration</span></div>
         <div class="sidebottom">
-          <b>Live Recon Uplink</b>
-          <p>Connect mobile phones via QR code or run local camera test to stream camera feeds and AI survivor detections.</p>
+          <b>Civilian Broadcast Link</b>
+          <p>Provide civilians with QR code or join link to stream live video. Real-time AI will automatically detect trapped civilians and relay GPS coordinates.</p>
         </div>
       </aside>
       <main class="main">
         <div class="heading">
           <div>
-            <div class="eyebrow">EMERGENCY OPERATIONS • LIVE</div>
+            <div class="eyebrow">EMERGENCY OPERATIONS • LIVE CIVILIAN SOS</div>
             <h2>Flood Response Overview</h2>
-            <p>Monitor surveillance, civilian detections and rescue readiness from one command surface.</p>
+            <p>Monitor civilian video telecasts, AI civilian detections, and rescue dispatch from one command surface.</p>
           </div>
           <div class="actions">
-            <button class="btn" id="cameraBtn">◉ Local camera test</button>
-            <button class="btn primary" id="connectBtn">＋ Connect surveillance drone</button>
+            <button class="btn" id="cameraBtn">◉ Test civilian camera</button>
+            <button class="btn primary" id="connectBtn">📱 Direct Civilian Broadcast</button>
           </div>
         </div>
         <section class="metrics">
           <div class="metric">
-            <div class="k">CONNECTED DRONES</div>
+            <div class="k">CIVILIAN TELECASTERS</div>
             <div class="v" id="mConnected">0</div>
-            <div class="hint live">● live</div>
+            <div class="hint live">● active phones</div>
           </div>
           <div class="metric">
             <div class="k">LIVE STREAMS</div>
@@ -242,7 +242,7 @@ body{overflow-x:hidden}
             <div class="hint">actual feeds only</div>
           </div>
           <div class="metric" id="metricPeople">
-            <div class="k">PEOPLE DETECTED</div>
+            <div class="k">CIVILIANS SPOTTED</div>
             <div class="v" id="mPeople">0</div>
             <div class="hint">current AI result</div>
           </div>
@@ -270,7 +270,7 @@ body{overflow-x:hidden}
         <div class="content">
           <section class="panel">
             <div class="panelhead">
-              <div class="paneltitle">⌖ FLOOD COVERAGE / LIVE POSITION</div>
+              <div class="paneltitle">⌖ FLOOD COVERAGE / CIVILIAN BROADCAST LOCATION</div>
               <span class="chip live">GPS STREAM</span>
             </div>
             <div class="map">
@@ -283,23 +283,23 @@ body{overflow-x:hidden}
               <div class="path p2"></div>
               <div class="path p3"></div>
               <div class="dronepin pin1" id="dronePin1">
-                <div class="icon">🚁</div>
-                <div class="bubble">S1 • SURVEILLANCE</div>
+                <div class="icon">📱</div>
+                <div class="bubble">C1 • CIVILIAN TELECAST</div>
               </div>
               <div class="dronepin pin2">
-                <div class="icon">🚁</div>
-                <div class="bubble">S2 • SURVEILLANCE</div>
+                <div class="icon">📱</div>
+                <div class="bubble">C2 • CIVILIAN TELECAST</div>
               </div>
               <div class="dronepin pin3">
                 <div class="icon">🚁</div>
-                <div class="bubble">R1 • RESCUE</div>
+                <div class="bubble">R1 • RESCUE DISPATCH</div>
               </div>
               <div class="personpin x" id="mapPersonX">⚠</div>
               <div class="personpin y" id="mapPersonY">⚠</div>
               <div class="maplegend">
                 <span>▰ surveyed</span>
-                <span>— flight path</span>
-                <span>🚁 live node</span>
+                <span>— signal path</span>
+                <span>📱 civilian stream</span>
                 <span>⚠ detection</span>
               </div>
             </div>
@@ -307,37 +307,37 @@ body{overflow-x:hidden}
           <div class="rightcol">
             <section class="panel feedpanel">
               <div class="panelhead">
-                <div class="paneltitle">▣ MULTI-DRONE VIDEO</div>
+                <div class="paneltitle">▣ CIVILIAN VIDEO FEEDS</div>
                 <span class="chip" id="feedCount">0 LIVE</span>
               </div>
               <div class="feeds" id="feeds">
-                <div class="feed" data-id="S1" id="feedS1">
-                  <div class="faux">NO SIGNAL • S1</div>
-                  <div class="head"><span>S1</span><span class="liveDot" id="s1Dot">● OFFLINE</span></div>
+                <div class="feed" data-id="C1" id="feedS1">
+                  <div class="faux">NO SIGNAL • C1 (CIVILIAN)</div>
+                  <div class="head"><span>C1</span><span class="liveDot" id="s1Dot">● OFFLINE</span></div>
                   <div class="foot"><span id="s1FootText">Camera unavailable</span><span>—</span></div>
                   <div class="bbox"></div>
-                  <div class="detect" id="s1DetectBadge">PERSON</div>
+                  <div class="detect" id="s1DetectBadge">CIVILIAN</div>
                 </div>
-                <div class="feed" data-id="S2">
-                  <div class="faux">NO SIGNAL • S2</div>
-                  <div class="head"><span>S2</span><span>● OFFLINE</span></div>
+                <div class="feed" data-id="C2">
+                  <div class="faux">NO SIGNAL • C2</div>
+                  <div class="head"><span>C2</span><span>● OFFLINE</span></div>
                   <div class="foot"><span>Camera unavailable</span><span>—</span></div>
                   <div class="bbox"></div>
-                  <div class="detect">PERSON</div>
+                  <div class="detect">CIVILIAN</div>
                 </div>
-                <div class="feed" data-id="S3">
-                  <div class="faux">NO SIGNAL • S3</div>
-                  <div class="head"><span>S3</span><span>● OFFLINE</span></div>
+                <div class="feed" data-id="C3">
+                  <div class="faux">NO SIGNAL • C3</div>
+                  <div class="head"><span>C3</span><span>● OFFLINE</span></div>
                   <div class="foot"><span>Camera unavailable</span><span>—</span></div>
                   <div class="bbox"></div>
-                  <div class="detect">PERSON</div>
+                  <div class="detect">CIVILIAN</div>
                 </div>
-                <div class="feed" data-id="S4">
-                  <div class="faux">NO SIGNAL • S4</div>
-                  <div class="head"><span>S4</span><span>● OFFLINE</span></div>
+                <div class="feed" data-id="C4">
+                  <div class="faux">NO SIGNAL • C4</div>
+                  <div class="head"><span>C4</span><span>● OFFLINE</span></div>
                   <div class="foot"><span>Camera unavailable</span><span>—</span></div>
                   <div class="bbox"></div>
-                  <div class="detect">PERSON</div>
+                  <div class="detect">CIVILIAN</div>
                 </div>
               </div>
             </section>
@@ -347,7 +347,7 @@ body{overflow-x:hidden}
                 <span class="chip" id="alertCount">0 OPEN</span>
               </div>
               <div id="alerts">
-                <div class="empty" id="alertsEmpty">No civilian detections yet.<br>Alerts appear automatically when humans are spotted by camera.</div>
+                <div class="empty" id="alertsEmpty">No civilian detections yet.<br>Alerts appear automatically when trapped civilians are spotted by telecast.</div>
               </div>
             </section>
             <section class="panel rescuebox">
@@ -375,12 +375,12 @@ body{overflow-x:hidden}
         <div class="bottom">
           <section class="panel fleetbox">
             <div class="panelhead">
-              <div class="paneltitle">▣ SURVEILLANCE FLEET</div>
+              <div class="paneltitle">▣ CIVILIAN BROADCASTERS</div>
               <span class="chip" id="fleetCount">0 CONNECTED</span>
             </div>
             <div class="fleetrows" id="fleet">
-              <div class="fleetrow head"><span>NODE</span><span>BATTERY</span><span>CONNECTION</span><span>MISSION</span></div>
-              <div class="empty" id="fleetEmpty">No surveillance devices connected.</div>
+              <div class="fleetrow head"><span>CIVILIAN NODE</span><span>BATTERY</span><span>CONNECTION</span><span>STATUS</span></div>
+              <div class="empty" id="fleetEmpty">No civilian streams connected.</div>
             </div>
           </section>
           <section class="panel">
@@ -391,7 +391,7 @@ body{overflow-x:hidden}
             <div class="timeline" id="timeline">
               <div class="event">
                 <div class="time">--:--:--</div>
-                <div><b>Command centre initialized</b><span>Waiting for real surveillance nodes.</span></div>
+                <div><b>Command centre initialized</b><span>Awaiting civilian live telecasts.</span></div>
               </div>
             </div>
           </section>
@@ -400,22 +400,22 @@ body{overflow-x:hidden}
     </div>
   </div>
 
-  <!-- Connect Drone Modal -->
+  <!-- Connect Civilian Modal -->
   <div class="modal" id="modal">
     <div class="modalbox">
       <div class="modalhead">
-        <h3>Connect surveillance drone</h3>
+        <h3>Civilian Live Video Telecast</h3>
         <button class="x" id="close">×</button>
       </div>
       <div class="qr" id="qr"><span>QR</span></div>
       <div class="session" id="sessionBox">
-        <b>Session Link</b><br>
-        <span id="sessionText">Preparing secure join link…</span><br><br>
-        Scan with another device (phone/tablet) to turn it into an autonomous search drone. It will use the phone's camera to detect survivors and round them off in real-time.
+        <b>Civilian Broadcast Link</b><br>
+        <span id="sessionText">Preparing secure broadcast link…</span><br><br>
+        Civilians can scan this QR code on any smartphone to stream live video. The phone's camera will detect trapped civilians/survivors in real-time and send location telemetry to the Command Centre.
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-        <button class="btn" style="flex:1" id="copyLink">📋 Copy join link</button>
-        <button class="btn" style="flex:1" id="openTabBtn">📱 Open phone mode here</button>
+        <button class="btn" style="flex:1" id="copyLink">📋 Copy broadcast link</button>
+        <button class="btn" style="flex:1" id="openTabBtn">📱 Open civilian mode on this device</button>
         <button class="btn primary" style="flex:100%" id="simulate">◉ Test with local camera</button>
       </div>
     </div>
@@ -557,34 +557,34 @@ function drawTargetReticle(ctx, x, y, w, h, idx, confidence, label = 'SURVIVOR')
   ctx.restore();
 }
 
-// -------------------------------------------------------------
-// CHECK MODE: PHONE SURVEILLANCE NODE vs DESKTOP COMMAND CENTRE
-// -------------------------------------------------------------
-const droneHashMatch = location.hash.match(/^#drone=(S\d+)$/);
-
-if (droneHashMatch) {
-  const droneId = droneHashMatch[1];
-  initDronePhoneMode(droneId);
-} else {
-  initCommandCentreMode();
+function checkAndInitMode() {
+  const civilianHashMatch = location.hash.match(/^#(?:drone|civilian)=(C\d+|S\d+)$/i);
+  if (civilianHashMatch) {
+    const civilianId = civilianHashMatch[1].replace(/^S/, 'C');
+    initCivilianPhoneMode(civilianId);
+  } else {
+    initCommandCentreMode();
+  }
 }
+window.addEventListener('hashchange', () => location.reload());
+checkAndInitMode();
 
 // =============================================================
-// PHONE SURVEILLANCE DRONE NODE IMPLEMENTATION
+// CIVILIAN PHONE VIDEO TELECAST NODE IMPLEMENTATION
 // =============================================================
-async function initDronePhoneMode(id) {
-  document.title = 'AquaRescue • ' + id + ' Surveillance Drone';
+async function initCivilianPhoneMode(id) {
+  document.title = 'AquaRescue • Civilian SOS Telecast (' + id + ')';
   
   document.getElementById('root').innerHTML = `
     <div class="drone-hud">
       <div class="drone-header">
         <div class="drone-title">
-          <span>🚁</span>
-          <span>${id} • RECON DRONE</span>
+          <span>📱</span>
+          <span>CIVILIAN SOS TELECAST • ${id}</span>
         </div>
         <div class="drone-uplink">
           <span class="pulse"></span>
-          <span id="uplinkStatus">UPLINK ACTIVE</span>
+          <span id="uplinkStatus">TELECAST ACTIVE</span>
         </div>
       </div>
 
@@ -592,8 +592,8 @@ async function initDronePhoneMode(id) {
         <div class="survivor-count-box">
           <div class="survivor-count-num" id="survivorCount">0</div>
           <div class="survivor-status-text">
-            <b id="survivorTitle">SCANNING FOR SURVIVORS</b>
-            <small id="survivorSubtitle">Camera feed active • AI model running</small>
+            <b id="survivorTitle">SCANNING FOR CIVILIANS IN DISTRESS</b>
+            <small id="survivorSubtitle">Camera telecast active • AI detection model running</small>
           </div>
         </div>
         <div class="chip" id="triageBadge">AREA CLEAR</div>
@@ -614,35 +614,35 @@ async function initDronePhoneMode(id) {
           <div class="crosshair"></div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:9px;color:#8ab4c4;background:#030c12bb;padding:3px 6px;border-radius:4px" id="hudGps">12.9716° N, 77.5946° E</span>
-            <span style="font-size:9px;color:#8ab4c4;background:#030c12bb;padding:3px 6px;border-radius:4px" id="hudAlt">ALT: 38M</span>
+            <span style="font-size:9px;color:#8ab4c4;background:#030c12bb;padding:3px 6px;border-radius:4px" id="hudAlt">GPS ACTIVE</span>
           </div>
         </div>
       </div>
 
       <div class="telemetry-bar">
         <div class="tel-item">
-          <span>BATTERY</span>
+          <span>PHONE BATTERY</span>
           <b id="nodeBattery">96%</b>
         </div>
         <div class="tel-item">
-          <span>AI MODE</span>
-          <b style="color:var(--cyan)">HUMAN DETECT</b>
+          <span>AI MODEL</span>
+          <b style="color:var(--cyan)">CIVILIAN DETECT</b>
         </div>
         <div class="tel-item">
-          <span>COMMAND UPLINK</span>
+          <span>SOS UPLINK</span>
           <b style="color:var(--teal)">ONLINE</b>
         </div>
       </div>
 
       <div class="drone-actions">
-        <button class="btn-drone" id="activateBtn">📷 ACTIVATE REAR CAMERA</button>
-        <button class="btn-drone secondary" id="simulateRunBtn">🌊 SIMULATE FLOOD RESCUE SEARCH</button>
+        <button class="btn-drone" id="activateBtn">📷 START CIVILIAN CAMERA BROADCAST</button>
+        <button class="btn-drone secondary" id="simulateRunBtn">🌊 SIMULATE FLOOD SOS TELECAST</button>
         <button class="btn-drone secondary" id="switchCamBtn" style="display:none">🔄 SWITCH CAMERA</button>
         <label class="btn-drone secondary" style="cursor:pointer;margin:0">
-          📁 SNAPSHOT SCAN (FILE/CAMERA)
-          <input type="file" accept="image/*" capture="environment" id="fileScanInput" style="display:none">
+          📁 UPLOAD / SNAPSHOT VIDEO SCAN
+          <input type="file" accept="image/*,video/*" capture="environment" id="fileScanInput" style="display:none">
         </label>
-        <a href="/" class="btn-drone secondary" style="text-decoration:none;font-size:11px">⌂ OPEN COMMAND CENTRE</a>
+        <a href="/" class="btn-drone secondary" style="text-decoration:none;font-size:11px">⌂ OPEN COMMAND DASHBOARD</a>
       </div>
     </div>
     <div class="toast" id="toast"></div>
@@ -671,8 +671,8 @@ async function initDronePhoneMode(id) {
   let simCtx = null;
   let simFrame = 0;
   let simulatedSurvivors = [
-    { x: 120, y: 160, w: 90, h: 180, vx: 0.5, vy: 0.2, label: 'Survivor #1' },
-    { x: 270, y: 200, w: 80, h: 160, vx: -0.4, vy: -0.3, label: 'Survivor #2' }
+    { x: 120, y: 160, w: 90, h: 180, vx: 0.5, vy: 0.2, label: 'Civilian #1' },
+    { x: 270, y: 200, w: 80, h: 160, vx: -0.4, vy: -0.3, label: 'Civilian #2' }
   ];
 
   // Battery
@@ -723,21 +723,21 @@ async function initDronePhoneMode(id) {
       const w = bw * scaleX;
       const h = bh * scaleY;
 
-      drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'SURVIVOR');
+      drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'CIVILIAN');
     });
 
     const count = detectedPersons.length;
     survivorCountEl.textContent = count;
     if (count > 0) {
       survivorBanner.classList.add('detected');
-      survivorTitle.textContent = `${count} SURVIVOR${count > 1 ? 'S' : ''} DETECTED!`;
-      survivorSubtitle.textContent = 'Target lock active • Telemetry streaming to Command Centre';
+      survivorTitle.textContent = `${count} CIVILIAN${count > 1 ? 'S' : ''} DETECTED!`;
+      survivorSubtitle.textContent = 'Target lock active • Telemetry streaming to Emergency Command Centre';
       triageBadge.className = 'chip critical';
       triageBadge.textContent = 'CRITICAL EVACUATION';
     } else {
       survivorBanner.classList.remove('detected');
-      survivorTitle.textContent = 'SEARCHING AREA';
-      survivorSubtitle.textContent = 'Camera feed active • No civilians in frame';
+      survivorTitle.textContent = 'SCANNING AREA';
+      survivorSubtitle.textContent = 'Civilian telecast active • Point camera towards people';
       triageBadge.className = 'chip live';
       triageBadge.textContent = 'AREA CLEAR';
     }
@@ -768,7 +768,7 @@ async function initDronePhoneMode(id) {
             confidence: p.score,
             sourceWidth: video.videoWidth || canvas.width,
             sourceHeight: video.videoHeight || canvas.height,
-            label: `Survivor #${i + 1}`
+            label: `Civilian #${i + 1}`
           }));
         } catch (e) {
           console.error('Detection error:', e);
@@ -801,7 +801,7 @@ async function initDronePhoneMode(id) {
         frameData = offCanvas.toDataURL('image/jpeg', 0.55);
       }
 
-      await fetch('/api/drone/telemetry', {
+      await fetch('/api/civilian/telemetry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -814,7 +814,7 @@ async function initDronePhoneMode(id) {
           status: 'ACTIVE'
         })
       });
-      document.getElementById('uplinkStatus').textContent = 'UPLINK ACTIVE';
+      document.getElementById('uplinkStatus').textContent = 'TELECAST ACTIVE';
       document.getElementById('uplinkStatus').style.color = 'var(--teal)';
     } catch (e) {
       document.getElementById('uplinkStatus').textContent = 'RETRYING UPLINK';
@@ -825,7 +825,7 @@ async function initDronePhoneMode(id) {
   activateBtn.onclick = async () => {
     isSimulating = false;
     if (!navigator.mediaDevices?.getUserMedia) {
-      toast('Camera restricted. Use "SNAPSHOT SCAN" or "SIMULATE SEARCH" below!');
+      toast('Camera restricted. Use "UPLOAD SNAPSHOT" or "SIMULATE SOS TELECAST"!');
       return;
     }
     try {
@@ -839,14 +839,14 @@ async function initDronePhoneMode(id) {
       video.srcObject = currentStream;
       await video.play();
       updateCanvasSize();
-      activateBtn.textContent = '🟢 CAMERA ACTIVE';
+      activateBtn.textContent = '🟢 TELECAST BROADCASTING';
       activateBtn.style.background = '#26e0b0';
       activateBtn.style.color = '#021018';
       switchCamBtn.style.display = 'block';
-      toast('Camera connected. Point at humans to detect survivors!');
+      toast('Civilian camera connected! Point towards people to detect trapped civilians.');
     } catch (err) {
-      toast('Camera permission denied. Try Simulation or Snapshot Scan!');
-      activateBtn.textContent = '⚠️ CAMERA RESTRICTED (USE SIMULATE)';
+      toast('Camera permission denied. Try Simulation or Snapshot Upload!');
+      activateBtn.textContent = '⚠️ CAMERA RESTRICTED (USE SIMULATION)';
     }
   };
 
@@ -923,12 +923,12 @@ async function initDronePhoneMode(id) {
         currentStream.getTracks().forEach(t => t.stop());
         video.srcObject = null;
       }
-      simulateRunBtn.textContent = '⏹ STOP SIMULATED SEARCH';
+      simulateRunBtn.textContent = '⏹ STOP SIMULATED TELECAST';
       simulateRunBtn.style.background = '#ff4757';
       simulateRunBtn.style.color = '#fff';
-      toast('Simulating live flood search: 2 survivors spotted in water');
+      toast('Simulating civilian SOS telecast: 2 civilians spotted in water');
     } else {
-      simulateRunBtn.textContent = '🌊 SIMULATE FLOOD RESCUE SEARCH';
+      simulateRunBtn.textContent = '🌊 SIMULATE FLOOD SOS TELECAST';
       simulateRunBtn.style.background = '#0b222f';
       simulateRunBtn.style.color = '#eaf8fb';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -947,7 +947,7 @@ async function initDronePhoneMode(id) {
       ctx.drawImage(img, 0, 0);
       const model = await getSharedDetectorModel();
       if (model) {
-        toast('Scanning image for humans...');
+        toast('Scanning uploaded image for civilians...');
         const preds = await model.detect(img);
         const persons = preds.filter(p => p.class === 'person');
         const formatted = persons.map((p, i) => ({
@@ -955,7 +955,7 @@ async function initDronePhoneMode(id) {
           confidence: p.score,
           sourceWidth: img.width,
           sourceHeight: img.height,
-          label: `Survivor #${i + 1}`
+          label: `Civilian #${i + 1}`
         }));
         lastDetections = formatted;
         drawDetectionOverlay(formatted);
@@ -976,7 +976,7 @@ function initCommandCentreMode() {
     area: 1.45,
     missions: 1,
     jackets: 2,
-    selected: 'S1',
+    selected: 'C1',
     isLocalCameraRunning: false,
     localStream: null,
     localSimInterval: null
@@ -996,29 +996,29 @@ function initCommandCentreMode() {
   async function openConnect() {
     const modal = $('#modal');
     modal.classList.add('show');
-    const id = 'S1';
-    $('#sessionText').textContent = 'Preparing secure join link for ' + id + '…';
+    const id = 'C1';
+    $('#sessionText').textContent = 'Preparing secure broadcast link for Civilian Stream ' + id + '…';
     $('#qr').innerHTML = '<div style="padding:45px 20px;text-align:center;color:#5d7b87;font-size:11px">GENERATING QR…</div>';
 
     try {
       const r = await fetch('/api/network');
       const net = await r.json();
-      const joinUrl = `${net.base}/#drone=${id}`;
+      const joinUrl = `${net.base}/#civilian=${id}`;
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(joinUrl)}`;
 
       $('#sessionText').innerHTML = `
-        <b>SURVEILLANCE NODE ${id} READY</b><br>
+        <b>CIVILIAN BROADCAST LINK (${id}) READY</b><br>
         <code style="background:#020a10;padding:4px 6px;border-radius:4px;display:block;margin:6px 0;word-break:break-all;color:#47dcff">${joinUrl}</code>
-        Scan with a phone on the same Wi-Fi network to stream camera and AI survivor detections.
+        Scan with any smartphone camera to stream live video for AI civilian/survivor detection.
       `;
       $('#qr').innerHTML = `<img alt="AquaRescue ${id} QR code" src="${qrUrl}">`;
 
       $('#copyLink').onclick = async () => {
         try {
           await navigator.clipboard.writeText(joinUrl);
-          toast('Join link copied to clipboard');
+          toast('Civilian broadcast link copied to clipboard');
         } catch (e) {
-          prompt('Copy this link to your phone:', joinUrl);
+          prompt('Copy this link to phone:', joinUrl);
         }
       };
 
@@ -1032,20 +1032,23 @@ function initCommandCentreMode() {
 
     $('#simulate').onclick = () => {
       modal.classList.remove('show');
-      toggleLocalCamera('S1');
+      toggleLocalCamera('C1');
     };
   }
 
-  $('#connectBtn').onclick = openConnect;
+  $('#connectBtn').onclick = () => {
+    location.hash = '#civilian=C1';
+    initCivilianPhoneMode('C1');
+  };
   $('#close').onclick = () => $('#modal').classList.remove('show');
   $('#modal').addEventListener('click', e => {
     if (e.target.id === 'modal') $('#modal').classList.remove('show');
   });
 
   // ===========================================================
-  // LOCAL CAMERA TEST WITH REAL-TIME AI HUMAN DETECTION
+  // LOCAL CAMERA TEST WITH REAL-TIME AI CIVILIAN DETECTION
   // ===========================================================
-  async function toggleLocalCamera(id = 'S1') {
+  async function toggleLocalCamera(id = 'C1') {
     const feed = document.querySelector(`.feed[data-id="${id}"]`);
     const cameraBtn = $('#cameraBtn');
 
@@ -1060,7 +1063,7 @@ function initCommandCentreMode() {
         clearInterval(state.localSimInterval);
         state.localSimInterval = null;
       }
-      cameraBtn.textContent = '◉ Local camera test';
+      cameraBtn.textContent = '◉ Test civilian camera';
       cameraBtn.classList.remove('active-cam');
 
       feed.innerHTML = `
@@ -1068,15 +1071,15 @@ function initCommandCentreMode() {
         <div class="head"><span>${id}</span><span class="liveDot" id="s1Dot">● OFFLINE</span></div>
         <div class="foot"><span id="s1FootText">Camera unavailable</span><span>—</span></div>
         <div class="bbox"></div>
-        <div class="detect" id="s1DetectBadge">PERSON</div>
+        <div class="detect" id="s1DetectBadge">CIVILIAN</div>
       `;
       feed.classList.remove('live-feed', 'detected');
       $('#metricPeople').classList.remove('alert-active');
       $('#mPeople').textContent = '0';
       $('#mapPersonX').classList.remove('visible');
       $('#mapPersonY').classList.remove('visible');
-      toast('Local camera stopped');
-      addTimeline('Local camera stopped', 'Local AI detection test completed.');
+      toast('Local civilian camera stopped');
+      addTimeline('Local camera stopped', 'Local AI civilian detection test completed.');
       return;
     }
 
@@ -1091,9 +1094,9 @@ function initCommandCentreMode() {
         <canvas class="feed-canvas" id="localFeedCanvas"></canvas>
       </div>
       <div class="head"><span>${id} • WEBCAM AI</span><span class="liveDot" id="localLiveDot">● LIVE</span></div>
-      <div class="foot"><span id="localFootText">AI human detection active</span><span id="localCountBadge" style="color:var(--cyan);font-weight:800">SEARCHING...</span></div>
+      <div class="foot"><span id="localFootText">AI civilian detection active</span><span id="localCountBadge" style="color:var(--cyan);font-weight:800">SCANNING...</span></div>
       <div class="bbox"></div>
-      <div class="detect" id="s1DetectBadge">PERSON</div>
+      <div class="detect" id="s1DetectBadge">CIVILIAN</div>
     `;
     feed.classList.add('live-feed');
 
@@ -1104,8 +1107,8 @@ function initCommandCentreMode() {
     const localFootText = feed.querySelector('#localFootText');
     const localCountBadge = feed.querySelector('#localCountBadge');
 
-    toast('Starting camera... Point it at humans to detect survivors!');
-    addTimeline('Local camera started', 'Real-time AI survivor detection active on S1 feed.');
+    toast('Starting camera... Point towards humans to detect trapped civilians!');
+    addTimeline('Local camera started', 'Real-time AI civilian detection active on C1 stream.');
 
     try {
       // Request webcam
@@ -1141,7 +1144,7 @@ function initCommandCentreMode() {
               confidence: p.score,
               sourceWidth: video.videoWidth || canvas.width,
               sourceHeight: video.videoHeight || canvas.height,
-              label: 'HUMAN'
+              label: 'CIVILIAN'
             }));
           } catch (err) {
             console.warn('Webcam detection frame error:', err);
@@ -1160,7 +1163,7 @@ function initCommandCentreMode() {
           const h = bh * scaleY;
 
           // Round off detected humans with glowing corner reticles and badge
-          drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'HUMAN');
+          drawTargetReticle(ctx, x, y, w, h, idx, person.confidence, 'CIVILIAN');
         });
 
         // Update Dashboard Metrics & Alert Queue
@@ -1187,14 +1190,14 @@ function initCommandCentreMode() {
               <div class="alertitem">
                 <div class="alerticon">⚠</div>
                 <div>
-                  <strong>Civilian Detection • Local Webcam (S1)</strong>
-                  <p>${count} human(s) detected in camera frame. Real-time AI reticles active.</p>
+                  <strong>Civilian Detection • Local Stream (C1)</strong>
+                  <p>${count} civilian(s) detected in video telecast. Real-time AI reticles active.</p>
                 </div>
                 <span class="priority critical">CRITICAL</span>
               </div>
             `;
             $('#alertCount').textContent = '1 OPEN';
-            addTimeline(`Local AI Alert: ${count} Human(s) Spotted`, `Webcam detected ${count} person(s) with high confidence.`);
+            addTimeline(`Local AI Alert: ${count} Civilian(s) Spotted`, `Webcam telecast detected ${count} person(s) with high confidence.`);
           }
         } else {
           feed.classList.remove('detected');
@@ -1216,8 +1219,8 @@ function initCommandCentreMode() {
 
     } catch (camErr) {
       console.warn('Physical camera unavailable. Launching live detection simulation:', camErr);
-      toast('Physical webcam unavailable. Launching AI simulation with real survivors!');
-      localFootText.textContent = 'Simulated search feed • AI scanning';
+      toast('Physical webcam unavailable. Launching AI simulation with real civilians!');
+      localFootText.textContent = 'Simulated telecast feed • AI scanning';
       
       // Canvas Simulation of Flood Survivors
       let simX = 60, simY = 70, simVx = 1.2, simVy = 0.6;
@@ -1264,8 +1267,8 @@ function initCommandCentreMode() {
         });
 
         // Round them off with the target reticles!
-        drawTargetReticle(ctx, simX, simY, 70, 100, 0, 0.95, 'HUMAN');
-        drawTargetReticle(ctx, simX2, simY2, 70, 100, 1, 0.92, 'HUMAN');
+        drawTargetReticle(ctx, simX, simY, 70, 100, 0, 0.95, 'CIVILIAN');
+        drawTargetReticle(ctx, simX2, simY2, 70, 100, 1, 0.92, 'CIVILIAN');
 
         // Update dashboard
         $('#mPeople').textContent = '2';
@@ -1284,8 +1287,8 @@ function initCommandCentreMode() {
             <div class="alertitem">
               <div class="alerticon">⚠</div>
               <div>
-                <strong>Civilian Detection • S1 Feed</strong>
-                <p>2 humans detected in water. Rounded tracking reticles active.</p>
+                <strong>Civilian Detection • C1 Feed</strong>
+                <p>2 civilians detected in water. Tracking reticles active.</p>
               </div>
               <span class="priority critical">CRITICAL</span>
             </div>
@@ -1296,28 +1299,28 @@ function initCommandCentreMode() {
     }
   }
 
-  $('#cameraBtn').onclick = () => toggleLocalCamera('S1');
+  $('#cameraBtn').onclick = () => toggleLocalCamera('C1');
 
-  // Real-Time Polling for Phone Drone State from Backend
+  // Real-Time Polling for Civilian Telecast State from Backend
   let prevSurvivors = 0;
   let prevActive = 0;
 
-  async function pollDroneFleet() {
-    // If local camera test is running directly on S1, let local camera retain priority on S1 feed
+  async function pollCivilianFleet() {
+    // If local camera test is running directly on C1, let local camera retain priority on C1 feed
     if (state.isLocalCameraRunning) return;
 
     try {
-      const res = await fetch('/api/drone/state');
+      const res = await fetch('/api/civilian/state');
       const data = await res.json();
-      const activeDrones = data.activeDrones || [];
+      const activeCivilians = data.activeCivilians || data.activeDrones || [];
       const totalSurvivors = data.totalSurvivors || 0;
 
       // Update metrics
       $('#mConnected').textContent = data.activeCount || 0;
-      $('#mStreams').textContent = activeDrones.filter(d => d.frame || d.online).length;
+      $('#mStreams').textContent = activeCivilians.filter(d => d.frame || d.online).length;
       $('#mPeople').textContent = totalSurvivors;
-      $('#feedCount').textContent = `${activeDrones.filter(d => d.online).length} LIVE`;
-      $('#fleetCount').textContent = `${activeDrones.length} CONNECTED`;
+      $('#feedCount').textContent = `${activeCivilians.filter(d => d.online).length} LIVE`;
+      $('#fleetCount').textContent = `${activeCivilians.length} CONNECTED`;
 
       const metricPeople = $('#metricPeople');
       if (totalSurvivors > 0) {
@@ -1326,36 +1329,36 @@ function initCommandCentreMode() {
         metricPeople.classList.remove('alert-active');
       }
 
-      // Update S1 Feed
-      const s1 = activeDrones.find(d => d.id === 'S1');
+      // Update C1 Feed
+      const c1 = activeCivilians.find(d => d.id === 'C1' || d.id === 'S1');
       const feedS1 = $('#feedS1');
       const s1Dot = $('#s1Dot');
       const s1FootText = $('#s1FootText');
       const s1DetectBadge = $('#s1DetectBadge');
 
-      if (s1 && s1.online) {
+      if (c1 && c1.online) {
         if (s1Dot) {
           s1Dot.className = 'liveDot';
           s1Dot.textContent = '● LIVE STREAM';
         }
         feedS1.classList.add('live-feed');
-        if (s1FootText) s1FootText.textContent = `Phone Recon • ${s1.gps?.text || 'GPS OK'}`;
+        if (s1FootText) s1FootText.textContent = `Civilian Telecast • ${c1.gps?.text || 'GPS OK'}`;
 
-        if (s1.frame) {
+        if (c1.frame) {
           let streamImg = feedS1.querySelector('img.stream-img');
           if (!streamImg) {
             streamImg = document.createElement('img');
             streamImg.className = 'stream-img';
             feedS1.prepend(streamImg);
           }
-          streamImg.src = s1.frame;
+          streamImg.src = c1.frame;
           const faux = feedS1.querySelector('.faux');
           if (faux) faux.style.display = 'none';
         }
 
-        if (s1.survivorsCount > 0) {
+        if (c1.survivorsCount > 0) {
           feedS1.classList.add('detected');
-          if (s1DetectBadge) s1DetectBadge.textContent = `${s1.survivorsCount} SURVIVOR${s1.survivorsCount > 1 ? 'S' : ''} DETECTED`;
+          if (s1DetectBadge) s1DetectBadge.textContent = `${c1.survivorsCount} CIVILIAN${c1.survivorsCount > 1 ? 'S' : ''} DETECTED`;
           if (s1Dot) s1Dot.className = 'liveDot alert';
           $('#mapPersonX').classList.add('visible');
           $('#mapPersonY').classList.add('visible');
@@ -1382,7 +1385,7 @@ function initCommandCentreMode() {
         $('#mEvents').textContent = state.events;
         addTimeline(
           `AI Alert: ${totalSurvivors} Civilian(s) Spotted`,
-          `Surveillance drone S1 reported ${totalSurvivors} survivor(s) at ${s1?.gps?.text || 'Grid Zone A'}`
+          `Civilian telecast C1 reported ${totalSurvivors} person(s) at ${c1?.gps?.text || 'Grid Zone A'}`
         );
 
         const alertsEl = $('#alerts');
@@ -1391,8 +1394,8 @@ function initCommandCentreMode() {
           <div class="alertitem">
             <div class="alerticon">⚠</div>
             <div>
-              <strong>Civilian Detection • S1</strong>
-              <p>${totalSurvivors} person(s) identified with high confidence. Evacuation team notified.</p>
+              <strong>Civilian Detection • C1 Telecast</strong>
+              <p>${totalSurvivors} person(s) identified with high confidence. Rescue team notified.</p>
             </div>
             <span class="priority critical">CRITICAL</span>
           </div>
@@ -1404,29 +1407,29 @@ function initCommandCentreMode() {
       }
 
       if (data.activeCount > prevActive) {
-        addTimeline('Surveillance Drone Linked', `Drone S1 connected to Command Centre.`);
-        toast('New surveillance drone connected!');
+        addTimeline('Civilian Broadcast Linked', `Civilian telecast C1 connected to Command Centre.`);
+        toast('New civilian telecast connected!');
       }
 
       // Update Fleet Table
       const fleetEl = $('#fleet');
-      fleetEl.innerHTML = '<div class="fleetrow head"><span>NODE</span><span>BATTERY</span><span>CONNECTION</span><span>MISSION</span></div>';
-      if (activeDrones.length === 0) {
-        fleetEl.innerHTML += '<div class="empty">No surveillance devices connected.</div>';
+      fleetEl.innerHTML = '<div class="fleetrow head"><span>CIVILIAN NODE</span><span>BATTERY</span><span>CONNECTION</span><span>STATUS</span></div>';
+      if (activeCivilians.length === 0) {
+        fleetEl.innerHTML += '<div class="empty">No civilian streams connected.</div>';
       } else {
-        activeDrones.forEach(d => {
+        activeCivilians.forEach(d => {
           fleetEl.innerHTML += `
             <div class="fleetrow">
-              <b>${d.id} • Surveillance</b>
+              <b>${d.id} • Civilian Telecast</b>
               <span>${d.battery != null ? d.battery + '%' : '—'}</span>
               <span><i class="badge ${d.online ? 'ok' : 'off'}">${d.online ? 'ONLINE' : 'OFFLINE'}</i></span>
-              <span>${d.survivorsCount > 0 ? '⚠ ' + d.survivorsCount + ' DETECTED' : 'SURVEILLANCE'}</span>
+              <span>${d.survivorsCount > 0 ? '⚠ ' + d.survivorsCount + ' SPOTTED' : 'TELECAST ACTIVE'}</span>
             </div>
           `;
         });
       }
 
-      if (s1 && s1.online) {
+      if (c1 && c1.online) {
         $('#dronePin1').classList.add('active');
       } else {
         $('#dronePin1').classList.remove('active');
@@ -1439,8 +1442,8 @@ function initCommandCentreMode() {
     }
   }
 
-  setInterval(pollDroneFleet, 1300);
-  pollDroneFleet();
+  setInterval(pollCivilianFleet, 1300);
+  pollCivilianFleet();
 }
 </script>
 </body>
